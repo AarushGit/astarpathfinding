@@ -164,61 +164,21 @@
     });
     window.addEventListener('mouseup', ()=>{ down=false; drag=null; });
 
-document.getElementById('startBtn').onclick = async () => {
-  // Reset classes first
-  grid.flat().forEach(n => n.el.classList.remove('visited', 'path'));
-  
-  // Reset node costs and prev references
-  grid.flat().forEach(n => { n.g = Infinity; n.f = Infinity; delete n.prev; });
-  
-  const open = [startNode];
-  const visited = new Set();
-  startNode.g = 0;
-  startNode.f = mh(startNode, endNode);
-  
-  while (open.length) {
-    open.sort((a,b) => a.f - b.f);
-    const current = open.shift();
-    visited.add(current);
-    
-    if (current !== startNode && current !== endNode) {
-      current.el.classList.add('visited');
-      await sleep(15);
-    }
-    
-    if (current === endNode) break;
-    
-    // Update neighbors
-    for (const nb of neighbors(current)) {
-      if (nb.wall || visited.has(nb)) continue;
-      const tentative_g = current.g + 1;
-      if (tentative_g < nb.g) {
-        nb.g = tentative_g;
-        nb.f = tentative_g + mh(nb, endNode);
-        nb.prev = current;
-        if (!open.includes(nb)) open.push(nb);
+    document.getElementById('startBtn').onclick = async ()=>{
+      const { order, path } = astar();
+      for (const n of order) {
+        if (n!==startNode&&n!==endNode) {
+          await sleep(15);
+          n.el.classList.add('visited');
+        }
       }
-    }
-    
-    // Find node in open with lowest f (best guess)
-    const bestNode = open[0];
-    
-    // Clear old path highlights
-    grid.flat().forEach(n => {
-      if (n !== startNode && n !== endNode) n.el.classList.remove('path');
-    });
-    
-    // Highlight current best path from bestNode to start
-    if (bestNode) {
-      let p = bestNode;
-      while (p.prev) {
-        if (p !== startNode && p !== endNode) p.el.classList.add('path');
-        p = p.prev;
+      for (const n of path) {
+        if (n!==startNode&&n!==endNode) {
+          await sleep(30);
+          n.el.classList.add('path');
+        }
       }
-    }
-  }
-};
-
+    };
     document.getElementById('resetBtn').onclick  = initGrid;
     document.getElementById('mazeBtn').onclick   = divideMaze;
     document.getElementById('randomBtn').onclick = randomMaze;
