@@ -1,0 +1,40 @@
+.btn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.node {
+  width: 20px;
+  height: 20px;
+  background-color: #2d3748;
+  transition: background-color 0.15s ease-in;
+}
+
+.node.wall {
+  background-color: #1a202c;
+}
+
+.node.start {
+  background-color: #38a169;
+}
+
+.node.end {
+  background-color: #e53e3e;
+}
+
+.node.visited {
+  background-color: #63b3ed;
+}
+
+.node.path {
+  background-color: #ecc94b;
+}
+
+#grid {
+  display: grid;
+  margin: auto;
+  grid-template-columns: repeat(30, 20px);
+  grid-auto-rows: 20px;
+}
