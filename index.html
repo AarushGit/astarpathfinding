@@ -1,196 +1,89 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>A* Pathfinding Visualizer</title>
-  <!-- TailwindCSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Your custom styles -->
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body class="bg-gray-900 text-white font-sans flex flex-col items-center min-h-screen">
-  <header class="w-full bg-gray-800 text-center p-4 text-2xl font-bold shadow">
-    A* Pathfinding Visualizer
-  </header>
+/* Button base */
+.btn {
+  padding: 0.65rem 1.3rem;
+  border-radius: 14px;
+  font-weight: 700;
+  font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: linear-gradient(
+    135deg,
+    #2563eb,
+    #3b82f6
+  ); /* Shift to blue gradient, no purple */
+  color: #f9fafb;
+  box-shadow: none; /* Removed glow */
+  border: none;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.3s ease, transform 0.15s ease;
+  will-change: background, transform;
+}
+.btn:hover {
+  background: linear-gradient(
+    135deg,
+    #1e40af,
+    #2563eb
+  ); /* Darker blue on hover */
+  transform: translateY(-3px);
+  box-shadow: none; /* No glow on hover */
+}
+.btn:active {
+  transform: translateY(0);
+  box-shadow: none; /* No glow on active */
+}
 
-  <div class="p-4 space-x-2">
-    <button id="startBtn"  class="btn bg-blue-600 hover:bg-blue-700">Start</button>
-    <button id="resetBtn"  class="btn bg-red-600 hover:bg-red-700">Reset</button>
-    <button id="mazeBtn"   class="btn bg-green-600 hover:bg-green-700">Divide Maze</button>
-    <button id="randomBtn" class="btn bg-purple-600 hover:bg-purple-700">Random 25%</button>
-  </div>
+/* Grid node base */
+.node {
+  width: 24px;
+  height: 24px;
+  background-color: #0f172a; /* Rich midnight blue */
+  border-radius: 12px;
+  box-shadow: inset 0 0 8px #1e40af44;
+  transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  cursor: default;
+  will-change: background-color;
+}
+.node:hover {
+  background-color: #2563eb; /* Bright royal blue on hover */
+  box-shadow: none; /* Removed glow */
+}
 
-  <div id="grid-container" class="flex-grow w-full max-w-5xl overflow-auto px-4">
-    <div id="grid"></div>
-  </div>
+/* Node states */
+.node.wall {
+  background-color: #111827; /* Darker almost black */
+  box-shadow: none;
+}
+.node.start {
+  background: #10b981; /* Emerald green */
+  box-shadow: none; /* Removed glow */
+}
+.node.end {
+  background: #ef4444; /* Vivid warm red */
+  box-shadow: none; /* Removed glow */
+}
+.node.visited {
+  background: #3b82f6; /* Bright, crystal blue */
+  opacity: 0.75;
+  box-shadow: none; /* Removed glow */
+}
+.node.path {
+  background: #facc15; /* Luminous yellow */
+  opacity: 0.95;
+  box-shadow: none; /* Removed glow */
+}
 
-  <footer class="py-4 text-gray-500 text-sm">
-    Show some love by ⭐ this repository and follow! 😤
-  </footer>
-
-  <script>
-    // — CONFIG —
-    const ROWS = 20, COLS = 30, gridEl = document.getElementById('grid');
-    let grid = [], startNode, endNode;
-
-    // — GRID SETUP —
-    function initGrid() {
-      gridEl.innerHTML = '';
-      grid = [];
-      for (let y = 0; y < ROWS; y++) {
-        const row = [];
-        for (let x = 0; x < COLS; x++) {
-          const node = { x, y, wall: false, g: Infinity, f: Infinity, prev: null };
-          const div = document.createElement('div');
-          div.className = 'node';
-          div.dataset.x = x; div.dataset.y = y;
-          gridEl.appendChild(div);
-          node.el = div;
-          row.push(node);
-        }
-        grid.push(row);
-      }
-      startNode = grid[0][0];
-      endNode   = grid[ROWS-1][COLS-1];
-      render();
-    }
-
-    // — RENDER —
-    function render() {
-      grid.flat().forEach(n => {
-        n.el.className = 'node';
-        if      (n.wall)  n.el.classList.add('wall');
-        else if (n===startNode) n.el.classList.add('start');
-        else if (n===endNode)   n.el.classList.add('end');
-      });
-    }
-
-    // — A* ALGO —
-    function astar() {
-      grid.flat().forEach(n => { n.g = Infinity; n.f = Infinity; delete n.prev; });
-      const open = [startNode], visited = new Set(), order = [];
-      startNode.g = 0; startNode.f = mh(startNode, endNode);
-
-      while (open.length) {
-        open.sort((a,b)=>a.f-b.f);
-        const cur = open.shift();
-        visited.add(cur); order.push(cur);
-        if (cur === endNode) break;
-        neighbors(cur).forEach(nb => {
-          if (nb.wall||visited.has(nb)) return;
-          const tg = cur.g + 1;
-          if (tg < nb.g) {
-            nb.g = tg; nb.f = tg + mh(nb, endNode); nb.prev = cur;
-            if (!open.includes(nb)) open.push(nb);
-          }
-        });
-      }
-
-      const path = [];
-      for (let p = endNode; p.prev; p = p.prev) path.unshift(p);
-      return { order, path };
-    }
-    function mh(a,b){ return Math.abs(a.x-b.x)+Math.abs(a.y-b.y); }
-    function neighbors(n){
-      const ret = [], {x,y} = n;
-      if (x>0)          ret.push(grid[y][x-1]);
-      if (x<COLS-1)     ret.push(grid[y][x+1]);
-      if (y>0)          ret.push(grid[y-1][x]);
-      if (y<ROWS-1)     ret.push(grid[y+1][x]);
-      return ret;
-    }
-
-    // — RECURSIVE DIVISION MAZE —
-    function divideMaze() {
-      grid.flat().forEach(n => n.wall = false);
-      (function divide(x,y,w,h,orient){
-        if (w<2||h<2) return;
-        const horiz = orient==='H';
-        const wx = x + (horiz?0:Math.floor(Math.random()*(w-2)));
-        const wy = y + (horiz?Math.floor(Math.random()*(h-2)):0);
-        const px = wx + (horiz?Math.floor(Math.random()*w):0);
-        const py = wy + (horiz?0:Math.floor(Math.random()*h));
-        const len = horiz? w : h;
-        for (let i=0; i<len; i++){
-          const nx = wx + (horiz?i:0), ny = wy + (horiz?0:i);
-          if (nx===px&&ny===py) continue;
-          grid[ny][nx].wall = true;
-        }
-        const [w1,h1,w2,h2,x1,y1,x2,y2] = horiz
-          ? [w, wy-y+1, w, y+h-wy-1, x, y, x, wy+1]
-          : [wx-x+1, h, x+w-wx-1, h, x, y, wx+1, y];
-        const o1 = choose(w1,h1), o2 = choose(w2,h2);
-        divide(x1,y1,w1,h1,o1); divide(x2,y2,w2,h2,o2);
-      })(0,0,COLS,ROWS,choose(COLS,ROWS));
-      startNode.wall = endNode.wall = false;
-      render();
-    }
-    function choose(w,h){ return w<h?'H':h<w?'V':(Math.random()<.5?'H':'V'); }
-
-    // — RANDOM 25% WALLS —
-    function randomMaze() {
-      grid.flat().forEach(n => n.wall = false);
-      const total = ROWS*COLS;
-      const count = Math.floor(total * 0.25);
-      const cells = grid.flat().filter(n=>n!==startNode&&n!==endNode);
-      for (let i=0; i<count; i++) {
-        const idx = Math.floor(Math.random() * cells.length);
-        cells.splice(idx,1)[0].wall = true;
-      }
-      render();
-    }
-
-    // — UI INTERACTIONS —
-    let down=false, paint=true, drag=null;
-    gridEl.addEventListener('mousedown', e => {
-      down = true;
-      const n = fromEvt(e);
-      if (!n) return;
-      if (n===startNode||n===endNode) drag = n;
-      else { paint = !n.wall; n.wall = paint; }
-      render();
-    });
-    gridEl.addEventListener('mousemove', e => {
-      if (!down) return;
-      const n = fromEvt(e);
-      if (!n) return;
-      if (drag) {
-        if (!n.wall && n!==startNode && n!==endNode) {
-          drag===startNode? startNode=n : endNode=n;
-        }
-      } else n.wall = paint;
-      render();
-    });
-    window.addEventListener('mouseup', ()=>{ down=false; drag=null; });
-
-    document.getElementById('startBtn').onclick = async ()=>{
-      const { order, path } = astar();
-      for (const n of order) {
-        if (n!==startNode&&n!==endNode) {
-          await sleep(15);
-          n.el.classList.add('visited');
-        }
-      }
-      for (const n of path) {
-        if (n!==startNode&&n!==endNode) {
-          await sleep(30);
-          n.el.classList.add('path');
-        }
-      }
-    };
-    document.getElementById('resetBtn').onclick  = initGrid;
-    document.getElementById('mazeBtn').onclick   = divideMaze;
-    document.getElementById('randomBtn').onclick = randomMaze;
-
-    function fromEvt(e) {
-      const c = e.target.closest('.node');
-      return c ? grid[+c.dataset.y][+c.dataset.x] : null;
-    }
-    const sleep = ms => new Promise(r=>setTimeout(r,ms));
-
-    // — INIT —
-    initGrid();
-  </script>
-</body>
-</html>
+/* Layout */
+#grid {
+  display: grid;
+  margin: auto;
+  grid-template-columns: repeat(30, 24px);
+  gap: 4px;
+  padding: 24px;
+  background-color: #1e293b; /* Deep space blue */
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(37, 99, 235, 0.3), inset 0 0 15px #2563eb44; /* subtle blue */
+  user-select: none;
+  max-width: fit-content;
+}
