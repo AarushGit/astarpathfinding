@@ -1,2 +1,2 @@
 # robotics
-Robotics &amp; ECON algorithms 
+A* Path Finding Algorithm/Visualizer 
